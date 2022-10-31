@@ -1,0 +1,27 @@
+Goto an144sw-newest\AN144SW\CP210xSetIDs.exe
+Run the program to change the USB sn to another one and save it.
+Then reconnect the usb device.
+
+---------------------------------------------------------------------------------
+Next is about how to write your own program example.
+How to write and read serial number with the rfid device?
+
+1,Add the dll file: CP210xManufacturing.dll into your program
+2,Call this two function:
+a) CP210x_SetSerialNumber()
+b) CP210x_GetDeviceSerialNumber()
+
+
+How to write product string?
+1,Add the dll file: CP210xManufacturing.dll into your program
+2,Call this two function:
+a) CP210x_SetProductSting()
+b) CP210x_GetProductSting()
+
+More detail please see an144-newest.pdf
+
+See program sample code:
+CP210xSetIDs_SRC folder
+
+
+

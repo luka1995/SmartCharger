@@ -1,0 +1,8 @@
+This driver is for Windows XP/Server 2003/Vista/7/8.
+
+Please install one of the new USB driver. If the PC is 32bits, then install the 
+"CP210xVCPInstaller_x86" else install the "USCP210xVCPInstaller_x64".
+
+Before install the usb driver,please disconnect the RFID writer.
+
+After finish install the driver,connect the writer.
