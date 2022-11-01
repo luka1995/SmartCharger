@@ -15,7 +15,7 @@ public class Main {
 	public static final String RFID_SERIAL_PORT_NAME = "/dev/rfid";
 
 	// Variables
-	
+
 	public static StatusLightManager statusLightManager;
 	public static EvccManager evccManager;
 	public static EnergyMeterManager energyMeterManager;
@@ -266,46 +266,6 @@ public class Main {
 
 			energyMeterManager.EnableListenerTimer(500); // 500 ms
 		}
-
-		homeView.buttonStartCharging.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (evccManager != null && evccManager.initialized == true) {
-					if (evccManager.selectedModuleMode == EvccManager.EvccModuleMode.Manual) {
-						if (evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.B1) {
-							evccManager.StartCharging(false);
-
-							if (timerLedFlashing != null) {
-								timerLedFlashing.cancel();
-								timerLedFlashing = null;
-							}
-
-							if (statusLightManager != null) {
-								statusLightManager.setBlue();
-							}
-						}
-					}
-				}
-			}
-		});
-
-		homeView.buttonStopCharging.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (evccManager != null && evccManager.initialized == true) {
-					if (evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.C1 || evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.C2 || evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.D1 || evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.D2) {
-						evccManager.StopCharging(true); // with break start charging
-					}
-				}
-			}
-		});
-
-		// Timer Camera
-
-		if (CameraManager.IsCameraConnected() == true) {
-		     (new Thread(new CameraThread())).start();
-		}
-
 	}
 
 	public static String GetSerialPortName(String name) {
@@ -348,11 +308,11 @@ public class Main {
 				break;
 			}
 			case 4: {
-				homeView.labelCable.setText("Cable Detection: 32");
+				homeView.labelCable.setText("Cable Detection: 32A");
 				break;
 			}
 			case 5: {
-				homeView.labelCable.setText("Cable Detection: 60");
+				homeView.labelCable.setText("Cable Detection: 60A");
 				break;
 			}
 			default: {
@@ -360,18 +320,5 @@ public class Main {
 				break;
 			}
 		}
-	}
-}
-
-class CameraThread implements Runnable {
-	public void run() {
-		CameraManager.CreateImage();
-
-		final Timer timerCamera = new Timer();
-		timerCamera.schedule(new TimerTask() {
-		    public void run() {
-				CameraManager.CreateImage();
-		    }
-		}, 0, (60000 * 5)); // 5 min
 	}
 }
