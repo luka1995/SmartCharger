@@ -1,12 +1,26 @@
+# Disables the warning overlays.
+avoid_warnings=1
+
+# Uncomment this if your display has a black border of unused pixels visible
+# and your display can output without overscan
+#disable_overscan=1
+
+# Uncomment the following to adjust overscan. Use positive numbers if console
+# goes off screen, and negative if there is too much border
+#overscan_left=16
+#overscan_right=16
+#overscan_top=16
+#overscan_bottom=16
+
 # Waveshare 7-inch display
 hdmi_drive=1
 hdmi_group=2
 hdmi_mode=87
-hdmi_cvt 800 480 60 6 0 0 0
+hdmi_cvt=800 480 60 6 0 0 0
 hdmi_force_hotplug=1
 max_usb_current=1
 
-# Enable audio
+# Enable audio (loads snd_bcm2835)
 dtparam=audio=on
 
 # Hardware interfaces
@@ -31,7 +45,6 @@ max_framebuffers=2
 # This line should be removed if the legacy DWC2 controller is required
 # (e.g. for USB device mode) or if USB support is not required.
 otg_mode=1
-
 
 [all]
 
