@@ -7,42 +7,40 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class Main {
-	
+
 	// Consts
-	
+
 	public static final String ENERGY_METER_SERIAL_PORT_NAME = "/dev/energymeter";
 	public static final String EVCC_SERIAL_PORT_NAME = "/dev/evcc";
 	public static final String RFID_SERIAL_PORT_NAME = "/dev/rfid";
-	
+
 	// Variables
 	
-	public static RfidManager rfidManager;
 	public static StatusLightManager statusLightManager;
-	public static OcppManager ocppManager;
 	public static EvccManager evccManager;
 	public static EnergyMeterManager energyMeterManager;
 	public static TemperatureSensorsManager temperatureSensorsManager;
-	
+
 	public static HomeView homeView;
-	
+
 	private static Timer timerLedFlashing;
-	
+
 	private static boolean requestChargingOk = false;
-	
+
 	// Functions
-	
+
 	public static void main(String[] args) {
 		// Init Home View
-		
-		homeView = new HomeView();		
-		
+
+		homeView = new HomeView();
+
 		// Init Status Light Manager
-		
+
 		statusLightManager = new StatusLightManager();
 		statusLightManager.setGreen();
-			
+
 		// Init Temperature Sensors Manager
-		
+
 		temperatureSensorsManager = new TemperatureSensorsManager();
 		temperatureSensorsManager.listener = new TemperatureSensorsManager.TemperatureSensorsListener() {
 			@Override
@@ -53,59 +51,23 @@ public class Main {
 			}
 		};
 		temperatureSensorsManager.EnableListenerTimer(500); // 500 ms
-		
-		// Init RFID Manager
-		
-		rfidManager = new RfidManager(GetSerialPortName(RFID_SERIAL_PORT_NAME));
-		if (rfidManager != null && rfidManager.initialized == true && rfidManager.serialDevice.isOpen() == true) {
-			rfidManager.listener = new RfidManager.RfidListener() {
-				@Override
-				public void requestCard(short tagType, char[] serialNumber) {
-					if (requestChargingOk == false) {
-						if (evccManager != null && evccManager.initialized == true) {
-							if (evccManager.selectedModuleMode == EvccManager.EvccModuleMode.Manual) {
-								if (evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.B1) {
-									evccManager.StartCharging(false);
-									
-									if (timerLedFlashing != null) {
-										timerLedFlashing.cancel();
-										timerLedFlashing = null;
-									}
-									
-									if (statusLightManager != null) {
-										statusLightManager.setBlue();
-									}
-								}
-							}
-						}
-					}
-				}
-				
-				@Override
-				public void cardRemoved() {
-					
-				}
-			};
-			
-			rfidManager.EnableListenerTimer(500); // 500 ms
-		}
-		
+
 		// Init EVCC Manager
-		
+
 		evccManager = new EvccManager(GetSerialPortName(EVCC_SERIAL_PORT_NAME));
 		if (evccManager != null && evccManager.initialized == true) {
 			evccManager.listener = new EvccManager.EvccListener() {
 				@Override
 				public void carConnnect() {
 					System.out.println("EVCC - CarConnnect");
-					
+
 					requestChargingOk = false;
-					
+
 					if (timerLedFlashing != null) {
 						timerLedFlashing.cancel();
 						timerLedFlashing = null;
 					}
-					
+
 					if (evccManager != null && evccManager.initialized == true) {
 						if (evccManager.selectedModuleMode == EvccManager.EvccModuleMode.Auto) {
 							if (statusLightManager != null) {
@@ -113,46 +75,46 @@ public class Main {
 							}
 						}
 					}
-					
+
 					if (energyMeterManager != null && energyMeterManager.initialized == true) {
 						energyMeterManager.ResetTPartCounter(1);
 						energyMeterManager.ResetTPartCounter(2);
 					}
-					
+
 					updateCableText();
 				}
 
 				@Override
 				public void carDisconnect() {
 					System.out.println("EVCC - CarDisconnect");
-					
+
 					requestChargingOk = false;
-					
+
 					if (timerLedFlashing != null) {
 						timerLedFlashing.cancel();
 						timerLedFlashing = null;
 					}
-					
+
 					if (statusLightManager != null) {
 						statusLightManager.setGreen();
 					}
-					
+
 					updateCableText();
 				}
 
 				@Override
 				public void startCharging(boolean ventilation) {
 					System.out.println("EVCC - StartCharging" + (ventilation == true ? " with ventilation" : ""));
-					
+
 					requestChargingOk = true;
-					
+
 					if (timerLedFlashing != null) {
 						timerLedFlashing.cancel();
 						timerLedFlashing = null;
 					}
-					
+
 					timerLedFlashing = new Timer();
-					timerLedFlashing.schedule(new TimerTask() { 
+					timerLedFlashing.schedule(new TimerTask() {
 					    public void run() {
 					    	if (statusLightManager != null) {
 						    	if (ventilation) {
@@ -171,7 +133,7 @@ public class Main {
 					    	}
 					    }
 					}, 0, 500);
-					
+
 					if (energyMeterManager != null && energyMeterManager.initialized == true) {
 						energyMeterManager.ResetTPartCounter(2);
 					}
@@ -180,16 +142,16 @@ public class Main {
 				@Override
 				public void stopCharging(boolean ventilation) {
 					System.out.println("EVCC - StopCharging" + (ventilation == true ? " with ventilation" : ""));
-					
+
 					if (timerLedFlashing != null) {
 						timerLedFlashing.cancel();
 						timerLedFlashing = null;
 					}
-					
+
 					if (statusLightManager != null) {
 						statusLightManager.setOrange();
 					}
-					
+
 					if (evccManager.breakStartCharging == false) {
 						evccManager.StartCharging(false);
 					}
@@ -198,14 +160,14 @@ public class Main {
 				@Override
 				public void requestCharging() {
 					System.out.println("EVCC - RequestCharging");
-					
+
 					if (timerLedFlashing != null) {
 						timerLedFlashing.cancel();
 						timerLedFlashing = null;
 					}
-					
+
 					timerLedFlashing = new Timer();
-					timerLedFlashing.schedule(new TimerTask() { 
+					timerLedFlashing.schedule(new TimerTask() {
 					    public void run() {
 					    	if (statusLightManager != null) {
 						    	if (statusLightManager.lightState == StatusLightManager.LightState.GREEN) {
@@ -217,16 +179,16 @@ public class Main {
 					    }
 					}, 0, 500);
 				}
-				
+
 				@Override
 				public void error() {
 					System.out.println("EVCC - Error");
-					
+
 					if (timerLedFlashing != null) {
 						timerLedFlashing.cancel();
 						timerLedFlashing = null;
 					}
-					
+
 					if (statusLightManager != null) {
 						statusLightManager.setRed();
 					}
@@ -235,34 +197,34 @@ public class Main {
 				@Override
 				public void requestChargingSuccessful() {
 					System.out.println("EVCC - RequestChargingSuccessful");
-					
+
 				}
 			};
 
 	    	if (evccManager.SetMaxCurrent(EvccManager.EvccCurrent.PWM_DUTY_32A) == true) {
 	    		System.out.println("EVCC Manager Max Current OK");
 	    	}
-	    	
+
 	    	evccManager.GetModuleMode();
-	    	
+
 	    	if (evccManager.SwitchModeToManual() == true) {
 	    		System.out.println("EVCC Manager Switch Mode To Manual OK");
 	    	}
-	    	
+
 	    	updateCableText();
-	    	
+
 	    	evccManager.EnableListenerTimer(500); // 500 ms
 		}
-	
+
 		homeView.buttonChangeEvccModuleMode.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (evccManager != null && evccManager.initialized == true) {
-					if (evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.A1 || evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.A2) {					
+					if (evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.A1 || evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.A2) {
 						if (evccManager.selectedModuleMode == EvccManager.EvccModuleMode.Auto) {
 							if (evccManager.SwitchModeToManual() == true) {
 					    		System.out.println("EVCC Manager Switch Mode To Manual OK");
-					    		
+
 					    		if (homeView != null) {
 					    			homeView.buttonChangeEvccModuleMode.setText("Manual Mode");
 					    		}
@@ -270,7 +232,7 @@ public class Main {
 						} else {
 							if (evccManager.SwitchModeToAuto() == true) {
 					    		System.out.println("EVCC Manager Switch Mode To Auto OK");
-					    		
+
 					    		if (homeView != null) {
 					    			homeView.buttonChangeEvccModuleMode.setText("Auto Mode");
 					    		}
@@ -280,9 +242,9 @@ public class Main {
 				}
 			}
 		});
-		
+
 		// Init Energy Meter Manager
-		
+
 		energyMeterManager = new EnergyMeterManager(GetSerialPortName(ENERGY_METER_SERIAL_PORT_NAME));
 		if (energyMeterManager != null && energyMeterManager.initialized == true) {
 			energyMeterManager.listener = new EnergyMeterManager.EnergyMeterListener() {
@@ -292,19 +254,19 @@ public class Main {
 						float t1partial, float t2total, float t2partial) {
 					if (homeView != null) {
 						homeView.labelEnergyMeterVoltage.setText("Voltage 1: " + Integer.toString(voltagePhase1) + " V" + "   " + "Voltage 2: " + Integer.toString(voltagePhase2) + " V" + "   " + "Voltage 3: " + Integer.toString(voltagePhase3) + " V");
-		    			
+
 		    			homeView.labelEnergyMeterCurrent.setText("Current 1: " + String.format("%.2f", currentPhase1) + " A" + "   " + "Current 2: " + String.format("%.2f", ((float)currentPhase2 * 0.1)) + " A" + "   " + "Current 3: " + String.format("%.2f", ((float)currentPhase3 * 0.1)) + " A");
-	
+
 		    			homeView.labelEnergyMeterTPartial.setText("Tpartial 1: " + String.format("%.2f", t1partial) + " kW" + "   " + "Tpartial 2: " + String.format("%.2f", t2partial) + " kW");
-	
+
 		    			homeView.labelEnergyMeterTotalPower.setText("Total Power: " + String.format("%.2f", totalPower) + " kW");
 					}
 				}
 			};
-			
+
 			energyMeterManager.EnableListenerTimer(500); // 500 ms
 		}
-		
+
 		homeView.buttonStartCharging.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -312,12 +274,12 @@ public class Main {
 					if (evccManager.selectedModuleMode == EvccManager.EvccModuleMode.Manual) {
 						if (evccManager.currentStateMachineState == EvccManager.EvccStateMachineState.B1) {
 							evccManager.StartCharging(false);
-							
+
 							if (timerLedFlashing != null) {
 								timerLedFlashing.cancel();
 								timerLedFlashing = null;
 							}
-							
+
 							if (statusLightManager != null) {
 								statusLightManager.setBlue();
 							}
@@ -326,7 +288,7 @@ public class Main {
 				}
 			}
 		});
-	
+
 		homeView.buttonStopCharging.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -337,41 +299,41 @@ public class Main {
 				}
 			}
 		});
-		
+
 		// Timer Camera
-		
+
 		if (CameraManager.IsCameraConnected() == true) {
 		     (new Thread(new CameraThread())).start();
 		}
-		
+
 	}
 
 	public static String GetSerialPortName(String name) {
 		try {
 			Process proc = Runtime.getRuntime().exec("ls -l " + name);
-			
-			BufferedReader stdInput = new BufferedReader(new 
+
+			BufferedReader stdInput = new BufferedReader(new
 			     InputStreamReader(proc.getInputStream()));
-			
+
 			String s = null;
 			String output = null;
 			while ((s = stdInput.readLine()) != null) {
 				output += s;
 			}
-			
+
 			if (output != null) {
 				int start = output.indexOf("->");
 				return "/dev/" + output.substring(start+3, output.length());
 			}
 		} catch (IOException e) {
 		}
-		
+
 		return null;
 	}
-	
+
 	public static void updateCableText() {
 		int cable = evccManager.GetCableDetection();
-		
+
 		switch (cable) {
 			case 1: {
 				homeView.labelCable.setText("Cable Detection: 6A");
@@ -404,9 +366,9 @@ public class Main {
 class CameraThread implements Runnable {
 	public void run() {
 		CameraManager.CreateImage();
-		
+
 		final Timer timerCamera = new Timer();
-		timerCamera.schedule(new TimerTask() { 
+		timerCamera.schedule(new TimerTask() {
 		    public void run() {
 				CameraManager.CreateImage();
 		    }
